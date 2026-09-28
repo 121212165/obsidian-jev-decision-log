@@ -1,0 +1,9 @@
+{
+  "id": "jev-decision-log",
+  "name": "Jev Decision Log",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Five-sample decision gate for serialized fiction writing: log Noul/Choice/Score decisions with mean, dispersion-penalized confidence, divergence flags and risk-tier verdicts; stats panel with emotion curve.",
+  "author": "121212165",
+  "isDesktopOnly": true
+}
