@@ -51,6 +51,7 @@ module.exports = class JevDecisionLog extends Plugin {
     this.addSettingTab(new JevSettingTab(this.app, this));
     this.registerView(VIEW_TYPE, (leaf) => new JevView(leaf, this));
   }
+  onunload() { this.app.workspace.detachLeavesOfType(VIEW_TYPE); }
   async saveSettings() { await this.saveData(this.settings); }
 
   currentChapter() {
@@ -282,10 +283,16 @@ class JevView extends ItemView {
 
     const sum = contentEl.createDiv();
     sum.style.cssText = "padding:8px; background:var(--background-secondary); border-radius:6px; font-size:13px; line-height:1.7; margin-bottom:8px;";
-    sum.innerHTML =
-      `记录 <b>${n}</b> 条 ｜ 均置信度 <b>${round2(conf)}</b><br>` +
-      `分歧率 <b>${Math.round(divRate * 100)}%</b>（分歧即信息，目标不是 0）<br>` +
-      `推翻直觉率 <b>${Math.round(ovrRate * 100)}%</b>（Jev 层价值的 核心指标）`;
+    const addLine = (parts) => {
+      const line = sum.createDiv();
+      for (const [text, bold] of parts) {
+        const span = line.createSpan({ text });
+        if (bold) span.style.fontWeight = "700";
+      }
+    };
+    addLine([["记录 ", false], [String(n), true], [" 条 ｜ 均置信度 ", false], [String(round2(conf)), true]]);
+    addLine([["分歧率 ", false], [Math.round(divRate * 100) + "%", true], ["（分歧即信息，目标不是 0）", false]]);
+    addLine([["推翻直觉率 ", false], [Math.round(ovrRate * 100) + "%", true], ["（Jev 层价值的核心指标）", false]]);
 
     // 按决策点计数
     const byPoint = {};
