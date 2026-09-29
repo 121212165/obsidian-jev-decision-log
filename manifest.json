@@ -3,7 +3,7 @@
   "name": "Jev Decision Log",
   "version": "0.1.1",
   "minAppVersion": "1.4.0",
-  "description": "Five-sample decision gate for serialized fiction writing: log Noul/Choice/Score decisions with mean, dispersion-penalized confidence, divergence flags and risk-tier verdicts; stats panel with emotion curve.",
+  "description": "Five-sample decision gate with dispersion-penalized confidence and risk tiers; decision points fully configurable for any domain.",
   "author": "121212165",
   "isDesktopOnly": true
 }

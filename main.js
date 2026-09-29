@@ -43,6 +43,7 @@ module.exports = class JevDecisionLog extends Plugin {
     this.settings = Object.assign({}, {
       jsonl: "决策日志.jsonl",
       md: "决策日志.md",
+      pointsJson: "", // 自定义决策点 JSON：[["P1","名称","时机","Choice","说明"],…]；留空用内置网文清单
     }, await this.loadData());
 
     this.addRibbonIcon("scale", "Jev 决策层：新决策", () => new DecisionModal(this).open());
@@ -53,6 +54,17 @@ module.exports = class JevDecisionLog extends Plugin {
   }
   onunload() { this.app.workspace.detachLeavesOfType(VIEW_TYPE); }
   async saveSettings() { await this.saveData(this.settings); }
+
+  /** 决策点清单：设置里 JSON 可整体替换（适配任何领域的决策闸），坏配置回退内置 */
+  points() {
+    if (this.settings.pointsJson) {
+      try {
+        const arr = JSON.parse(this.settings.pointsJson);
+        if (Array.isArray(arr) && arr.length && arr.every((p) => Array.isArray(p) && p[0])) return arr;
+      } catch (e) {}
+    }
+    return POINTS;
+  }
 
   currentChapter() {
     const v = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -115,13 +127,13 @@ class DecisionModal extends Modal {
     rowP.style.cssText = "display:flex; gap:8px; align-items:center; margin-bottom:6px;";
     rowP.createEl("label", { text: "决策点", attr: { style: "width:64px; font-weight:600; font-size:12px;" } });
     const selP = rowP.createEl("select");
-    for (const [id, name, , prim, desc] of POINTS) {
+    for (const [id, name, , prim, desc] of this.plugin.points()) {
       selP.createEl("option", { value: id, text: `${id} ${name}（${prim}）` });
     }
     const hint = contentEl.createDiv();
     hint.style.cssText = "font-size:11px; color:var(--text-muted); margin-bottom:8px;";
     const setHint = () => {
-      const p = POINTS.find((x) => x[0] === selP.value);
+      const p = this.plugin.points().find((x) => x[0] === selP.value);
       hint.setText(p ? p[3] + "：" + p[4] : "");
       renderInputs(p ? p[3] : "Noul");
     };
@@ -174,7 +186,7 @@ class DecisionModal extends Modal {
 
     computeBtn.onclick = () => {
       result.empty();
-      const p = POINTS.find((x) => x[0] === selP.value);
+      const p = this.plugin.points().find((x) => x[0] === selP.value);
       const prim = p ? p[3] : "Noul";
       const inputs = [...sampleContainer.querySelectorAll("select, input[type=text]")]
         .filter((el) => el !== this._intuition && el !== q);
@@ -300,7 +312,7 @@ class JevView extends ItemView {
     contentEl.createEl("div", { text: "各决策点次数", attr: { style: "font-weight:600; margin-bottom:4px; font-size:12px;" } });
     const listEl = contentEl.createDiv();
     for (const [pt, c] of Object.entries(byPoint)) {
-      const p = POINTS.find((x) => x[0] === pt);
+      const p = this.plugin.points().find((x) => x[0] === pt);
       const row = listEl.createDiv();
       row.style.cssText = "display:flex; justify-content:space-between; padding:3px 6px; font-size:12px;";
       row.createEl("span", { text: `${pt} ${p ? p[1] : ""}` });
@@ -343,5 +355,16 @@ class JevSettingTab extends PluginSettingTab {
         this.plugin.settings.md = v.trim() || "决策日志.md";
         await this.plugin.saveSettings();
       }));
+    new Setting(containerEl).setName("决策点清单（JSON，可选）")
+      .setDesc('整体替换内置 P1-P14。格式 [["P1","名称","时机","Choice","说明"],...]，原语可为 Noul/Choice/Score。任何领域的决策闸都能定义')
+      .addTextArea((t) => {
+        t.setValue(this.plugin.settings.pointsJson || "");
+        t.inputEl.style.minHeight = "100px";
+        t.inputEl.style.fontFamily = "monospace";
+        t.onChange(async (v) => {
+          this.plugin.settings.pointsJson = v;
+          await this.plugin.saveSettings();
+        });
+      });
   }
 }
